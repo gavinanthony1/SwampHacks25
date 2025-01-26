@@ -1,158 +1,145 @@
 import pygame
-from ai_module import get_ai_response
 
-pygame.init()
+class SpaceInvaders:
+    def __init__(self, width, height):
+        self.width = width
+        self.height = height
+        # Game settings
+        self.white = (255, 255, 255)
+        self.black = (0, 0, 0)
+        self.FPS = 60
+        self.player_speed = 5
+        self.bullet_speed = 7
+        self.alien_speed = 1
+        self.num_aliens = 13
 
-screen_info = pygame.display.Info()
-width, height = screen_info.current_w, screen_info.current_h  # Get current screen dimensions
+        self.screen = pygame.display.set_mode((self.width, self.height))
+        pygame.display.set_caption('Space Invaders')
 
+        self.font = pygame.font.Font(None, 36)
 
-screen = pygame.display.set_mode((width, height))
-pygame.display.set_caption('Space Invaders')
+        # Player settings
+        self.player_width, self.player_height = 50, 50
+        self.player = pygame.Rect(self.width // 2 - self.player_width // 2, self.height - self.player_height - 10, self.player_width, self.player_height)
+        self.player_image = pygame.Surface((self.player_width, self.player_height))
+        self.player_image.fill(self.white)
 
-# game settings
-white = (255, 255, 255)
-black = (0, 0, 0)
-FPS = 60
-player_speed = 5
-bullet_speed = 7
-alien_speed = 1
-num_aliens = 13
+        # Bullets
+        self.bullet_width, self.bullet_height = 5, 10
+        self.bullets = []
 
-font = pygame.font.Font(None, 36)
+        # Aliens
+        self.alien_width, self.alien_height = 40, 40
+        self.aliens = []
+        for i in range(self.num_aliens):
+            alien = pygame.Rect(100 * (i + 1), 50, self.alien_width, self.alien_height)
+            self.aliens.append(alien)
 
-# player settings
-player_width, player_height = 50, 50
-player = pygame.Rect(width // 2 - player_width // 2, height - player_height - 10, player_width, player_height)
-player_image = pygame.Surface((player_width, player_height))
-player_image.fill(white)
+        self.alien_image = pygame.Surface((self.alien_width, self.alien_height))
+        self.alien_image.fill(self.white)
 
-# bullets
-bullet_width, bullet_height = 5, 10
-bullets = []
+        self.score = 0
 
-# aliens
-alien_width, alien_height = 40, 40
-aliens = []
+    def move_player(self):
+        keys = pygame.key.get_pressed()
+        if keys[pygame.K_LEFT] and self.player.left > 0:
+            self.player.x -= self.player_speed
+        if keys[pygame.K_RIGHT] and self.player.right < self.width:
+            self.player.x += self.player_speed
 
-score = 0
-for i in range(num_aliens):
-    alien = pygame.Rect(100 * (i + 1), 50, alien_width, alien_height)
-    aliens.append(alien)
+    def shoot_bullet(self):
+        bullet = pygame.Rect(self.player.centerx - self.bullet_width // 2, self.player.top, self.bullet_width, self.bullet_height)
+        self.bullets.append(bullet)
 
-alien_image = pygame.Surface((alien_width, alien_height))
-alien_image.fill(white)
+    def move_bullets(self):
+        for bullet in self.bullets[:]:
+            bullet.y -= self.bullet_speed
+            if bullet.bottom < 0:
+                self.bullets.remove(bullet)
 
-def move_player():
-    keys = pygame.key.get_pressed()
-    if keys[pygame.K_LEFT] and player.left > 0:
-        player.x -= player_speed
-    if keys[pygame.K_RIGHT] and player.right < width:
-        player.x += player_speed
+    def move_aliens(self):
+        for alien in self.aliens:
+            alien.y += self.alien_speed
 
-def shoot_bullet():
-    bullet = pygame.Rect(player.centerx - bullet_width // 2, player.top, bullet_width, bullet_height)
-    bullets.append(bullet)
+    def check_collisions(self):
+        for bullet in self.bullets[:]:
+            for alien in self.aliens[:]:
+                # Check for collisions
+                if bullet.colliderect(alien):
+                    self.bullets.remove(bullet)
+                    self.aliens.remove(alien)
+                    self.score += 1
+                    return True
+        return False
 
-def move_bullets():
-    global bullets
-    for bullet in bullets[:]:
-        bullet.y -= bullet_speed
-        if bullet.bottom < 0:
-            bullets.remove(bullet)
+    def display_score(self):
+        score_text = self.font.render(f'Score: {self.score}', True, self.white)
+        self.screen.blit(score_text, (10, 10))
 
-def move_aliens():
-    global aliens
-    for alien in aliens:
-        alien.y += alien_speed
-
-def check_collisions():
-    global bullets, aliens, score
-    for bullet in bullets[:]:
-        for alien in aliens[:]:
-            # check for collisions
-            if bullet.colliderect(alien):
-                bullets.remove(bullet)
-                aliens.remove(alien)
-                score += 1
-                return True
-    return False
-
-def get_ai_advice():
-    """Ask the AI for advice on the game (hopefully)."""
-    ai_response = get_ai_response({"game": "Space Invaders", "aliens": len(aliens), "bullets": len(bullets)})
-    return ai_response
-
-def display_score():
-    score_text = font.render(f'Score: {score}', True, white)
-    screen.blit(score_text, (10, 10))
-
-
-
-def game_over():
-    my_font = pygame.font.SysFont('arial', 50)
-    GOsurface = my_font.render(f"Game Over! Your Score: {score}", True, white)
-    GOrect = GOsurface.get_rect()
-    GOrect.midtop = (width // 2, height // 4)
-    screen.blit(GOsurface, GOrect)
-    pygame.display.flip()
-    pygame.time.wait(1000)  # wait for 2 seconds before quitting
-
-def main():
-    global bullets, aliens
-    clock = pygame.time.Clock()
-    running = True
-    while running:
-        screen.fill(black)
-
-        move_player()
-        move_bullets()
-        move_aliens()
-        collision_occurred = check_collisions()
-
-        # Draw player and aliens
-        screen.blit(player_image, player)
-        for bullet in bullets:
-            pygame.draw.rect(screen, white, bullet)
-        for alien in aliens:
-            screen.blit(alien_image, alien)
-
-        display_score()
-
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                running = False
-            if event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_SPACE:
-                    shoot_bullet()
-                if event.key == pygame.K_2:
-                    running = False
-                # to escape the whole program
-                if event.key == pygame.K_ESCAPE:
-                    return 'escape'
-
-        if collision_occurred:
-            global alien_speed
-            alien_speed = 1
-        # AI might increase the alien speed if player is doing good (maybe probably not going to work)
-        if len(aliens) < num_aliens // 2:
-            alien_speed = 2
-
-        # if hit by alien
-        for alien in aliens[:]:
-            # check for collisions
-            if player.colliderect(alien):
-                game_over()
-                running = False
-        # ends game if aliens reach the bottom
-        for alien in aliens:
-            if alien.bottom >= height + 40:
-                game_over()
-                running = False
-
+    def game_over(self):
+        my_font = pygame.font.SysFont('arial', 50)
+        GOsurface = my_font.render(f"Game Over! Your Score: {self.score}", True, self.white)
+        GOrect = GOsurface.get_rect()
+        GOrect.midtop = (self.width // 2, self.height // 4)
+        self.screen.blit(GOsurface, GOrect)
         pygame.display.flip()
-        clock.tick(FPS)
+        pygame.time.wait(1000)  # Wait for 2 seconds before quitting
 
+    def run(self):
+        clock = pygame.time.Clock()
+        running = True
+        while running:
+            self.screen.fill(self.black)
 
-if __name__ == "__main__":
-    main()
+            self.move_player()
+            self.move_bullets()
+            self.move_aliens()
+            collision_occurred = self.check_collisions()
+
+            # Draw player and aliens
+            self.screen.blit(self.player_image, self.player)
+            for bullet in self.bullets:
+                pygame.draw.rect(self.screen, self.white, bullet)
+            for alien in self.aliens:
+                self.screen.blit(self.alien_image, alien)
+
+            self.display_score()
+
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    running = False
+                if event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_SPACE:
+                        self.shoot_bullet()
+                    if event.key == pygame.K_2:
+                        running = False
+                    # To escape the whole program
+                    if event.key == pygame.K_ESCAPE:
+                        return 'escape'
+
+            if collision_occurred:
+                self.alien_speed = 1
+
+            # AI might increase the alien speed if the player is doing well
+            if len(self.aliens) < self.num_aliens // 2:
+                self.alien_speed = 2
+
+            # If hit by alien
+            for alien in self.aliens[:]:
+                if self.player.colliderect(alien):
+                    self.game_over()
+                    running = False
+
+            # Ends game if aliens reach the bottom
+            for alien in self.aliens:
+                if alien.bottom >= self.height + 40:
+                    self.game_over()
+                    running = False
+
+            if len(self.aliens) == 0:
+                self.game_over()
+                running = False
+
+            pygame.display.flip()
+            clock.tick(self.FPS)
+

@@ -1,23 +1,38 @@
 import pygame
-from pong import main as pong_main
-from space_invaders import main as space_invaders_main
-from snake import main as snake_main
-
+from pong import Pong
+from space_invaders import SpaceInvaders
+from snake import Snake
+import random
 def game_transition():
-    current_game = "Pong"  # Starting game
+    pygame.init()
+    screen_info = pygame.display.Info()
+    width, height = screen_info.current_w, screen_info.current_h
+
+    next_game = random.randrange(3)  # Starting game
     while True:
-        if current_game == "Pong":
-            if pong_main() == 'escape':  # Play Pong
+        if next_game == 0: # Pong
+            current_game = next_game # two placeholders to prevent same game back-to-back
+            game = Pong(width, height)
+            if game.run() == 'escape':
                 break
-            current_game = "Space Invaders"  # Move to Space Invaders
-        elif current_game == "Space Invaders":
-            if space_invaders_main() == 'escape':  # Play Pong
+            while next_game == current_game:
+                next_game = random.randrange(3)  # Move to next random game
+
+        elif next_game == 1:  # SpaceInvaders
+            current_game = next_game # two placeholders to prevent same game back-to-back
+            game = SpaceInvaders(width, height)
+            if game.run() == 'escape':
                 break
-            current_game = "Snake"  # Move to Sudoku
-        elif current_game == "Snake":
-            if snake_main() == 'escape':  # Play Pong
+            while next_game == current_game:
+                next_game = random.randrange(3)  # Move to next random game
+
+        elif next_game == 2: # Snake
+            current_game = next_game  # two placeholders to prevent same game back-to-back
+            game = Snake(width, height)
+            if game.run() == 'escape':
                 break
-            current_game = "Pong"  # End the experience
+            while next_game == current_game:
+                next_game = random.randrange(3)  # Move to next random game
 
 
 if __name__ == "__main__":

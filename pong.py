@@ -1,185 +1,171 @@
 import pygame
 import random
 
-pygame.init()
 
-screen_info = pygame.display.Info()
-fullscreen_width, fullscreen_height = screen_info.current_w, screen_info.current_h  # Get current screen dimensions
+class Pong:
+    def __init__(self, fullscreen_width, fullscreen_height):
+        self.fullscreen_width = fullscreen_width
+        self.fullscreen_height = fullscreen_height
+        # only part of the screen is played on
+        self.width = 400
+        self.height = 300
 
-# only part of the screen is played on
-width, height = 400, 300
+        self.white = (255, 255, 255)
+        self.FPS = 60
+        self.paddle_width = 10
+        self.paddle_height = 60
+        self.ball_size = 10
+        self.ai_speed = 7
+        self.score_limit = 10
+        self.player_score = 0
+        self.ai_score = 0
+        #  position for the  game area
+        self.game_area_x = (self.fullscreen_width - self.width) // 2
+        self.game_area_y = (self.fullscreen_height - self.height) // 2
 
-white = (255, 255, 255)
-FPS = 60
-paddle_width, paddle_height = 10, 60
-ball_size = 10
-ai_speed = 7
-score_limit = 2
+        # Game objects (Player and AI paddles, ball)
+        self.player = pygame.Rect(self.game_area_x + 30, self.game_area_y + self.height // 2 - self.paddle_height // 2,
+                                  self.paddle_width,
+                                  self.paddle_height)
+        self.ai = pygame.Rect(self.game_area_x + self.width - 30 - self.paddle_width,
+                              self.game_area_y + self.height // 2 - self.paddle_height // 2,
+                              self.paddle_width, self.paddle_height)
+        self.ball = pygame.Rect(self.game_area_x + self.width // 2 - self.ball_size // 2,
+                                self.game_area_y + self.height // 2 - self.ball_size // 2,
+                                self.ball_size, self.ball_size)
+        self.ball_dx = random.choice((1, -1))
+        self.ball_dy = random.choice((1, -1))  # Ball direction
 
-screen = pygame.display.set_mode((fullscreen_width, fullscreen_height))  # Full-screen mode
-pygame.display.set_caption('Pong')
+    def reset_ball(self):
+        self.ball.center = (self.game_area_x + self.width // 2, self.game_area_y + self.height // 2)
+        self.ball_dx, self.ball_dy = random.choice((1, -1)), random.choice((1, -1))
 
-#  position for the  game area
-game_area_x = (fullscreen_width - width) // 2
-game_area_y = (fullscreen_height - height) // 2
+    def move_ai(self):
+        if self.ai.centery < self.ball.centery:
+            self.ai.y += self.ai_speed
+        if self.ai.centery > self.ball.centery:
+            self.ai.y -= self.ai_speed
 
-# Game objects (Player and AI paddles, ball)
-player = pygame.Rect(game_area_x + 30, game_area_y + height // 2 - paddle_height // 2, paddle_width, paddle_height)
-ai = pygame.Rect(game_area_x + width - 30 - paddle_width, game_area_y + height // 2 - paddle_height // 2, paddle_width, paddle_height)
-ball = pygame.Rect(game_area_x + width // 2 - ball_size // 2, game_area_y + height // 2 - ball_size // 2, ball_size, ball_size)
-ball_dx, ball_dy = random.choice((1, -1)), random.choice((1, -1))  # Ball direction
+        # keeps AI paddle within the screen bounds
+        if self.ai.top < self.game_area_y:
+            self.ai.top = self.game_area_y
+        if self.ai.bottom > self.game_area_y + self.height:
+            self.ai.bottom = self.game_area_y + self.height
 
-player_score = 0
-ai_score = 0
+    def display_score(self):
+        # render left score
+        font_score = pygame.font.Font(None, 100)
+        left_text = font_score.render(str(self.player_score), True, self.white)
+        left_text_rect = left_text.get_rect(center=(self.fullscreen_width // 4, self.fullscreen_height // 2))
+        self.screen.blit(left_text, left_text_rect)
 
+        # renders right score
+        right_text = font_score.render(str(self.ai_score), True, self.white)
+        right_text_rect = right_text.get_rect(center=(3 * self.fullscreen_width // 4, self.fullscreen_height // 2))
+        self.screen.blit(right_text, right_text_rect)
 
-def reset_ball():
-    """Reset the ball to the center."""
-    global ball_dx, ball_dy
-    ball.center = (game_area_x + width // 2, game_area_y + height // 2)
-    ball_dx, ball_dy = random.choice((1, -1)), random.choice((1, -1))
+    def render_title(self):
+        # instructions
+        font_instructions = pygame.font.Font(None, 30)
 
-def move_ai():
-    """Move the AI paddle to follow the ball."""
-    if ai.centery < ball.centery:
-        ai.y += ai_speed
-    if ai.centery > ball.centery:
-        ai.y -= ai_speed
+        text = font_instructions.render("Spacebar to start/reset", True, self.white)
+        text_rect = text.get_rect(center=(self.fullscreen_width // 2, self.fullscreen_height // 10))
+        self.screen.blit(text, text_rect)
 
-    # keeps AI paddle within the screen bounds
-    if ai.top < game_area_y:
-        ai.top = game_area_y
-    if ai.bottom > game_area_y + height:
-        ai.bottom = game_area_y + height
+    def game_over(self, winner):
+        my_font = pygame.font.SysFont('arial', 50)
+        if (winner == "AI"):
+            GOsurface = my_font.render(f"You Lose! Your Score: {self.player_score}", True, self.white)
+        else:
+            GOsurface = my_font.render(f"You Win! Your Score: {self.player_score}", True, self.white)
+        GOrect = GOsurface.get_rect()
+        GOrect.midtop = (self.fullscreen_width // 2, self.fullscreen_height // 4 + 20)
+        self.screen.blit(GOsurface, GOrect)
+        pygame.display.flip()
+        pygame.time.wait(2000)  # wait for 2 seconds before quitting
 
-def display_score():
-    """Display the scores on the screen."""
-    # render left score
-    font_score = pygame.font.Font(None, 100)
-    left_text = font_score.render(str(player_score), True, white)
-    left_text_rect = left_text.get_rect(center=(fullscreen_width // 4, fullscreen_height // 2))
-    screen.blit(left_text, left_text_rect)
+    def run(self):
+        self.screen = pygame.display.set_mode((self.fullscreen_width, self.fullscreen_height))  # Full-screen mode
+        pygame.display.set_caption('Pong')
 
-    # renders right score
-    right_text = font_score.render(str(ai_score), True, white)
-    right_text_rect = right_text.get_rect(center=(3 * fullscreen_width // 4, fullscreen_height // 2))
-    screen.blit(right_text, right_text_rect)
+        #  position for the  game area
+        self.game_area_x = (self.fullscreen_width - self.width) // 2
+        self.game_area_y = (self.fullscreen_height - self.height) // 2
 
-def render_title():
-    # instructions
-    font_instructions = pygame.font.Font(None, 30)
+        paused = True
+        clock = pygame.time.Clock()
+        running = True
+        while running:
+            self.screen.fill((0, 0, 0))
 
-    text = font_instructions.render("Spacebar to reset", True, white)
-    text_rect = text.get_rect(center=(fullscreen_width // 2, fullscreen_height // 10))
-    screen.blit(text, text_rect)
+            # draws the white outline for the game area
+            pygame.draw.rect(self.screen, self.white, (self.game_area_x, self.game_area_y, self.width, self.height), 5)
 
-    text = font_instructions.render("U to unpause", True, white)
-    text_rect = text.get_rect(center=(fullscreen_width // 2, fullscreen_height // 10 + 50))
-    screen.blit(text, text_rect)
+            # draws the  instructions
+            self.render_title()
 
-    text = font_instructions.render("P to pause", True, white)
-    text_rect = text.get_rect(center=(fullscreen_width // 2, fullscreen_height // 10 + 100))
-    screen.blit(text, text_rect)
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    running = False
 
-    text = font_instructions.render("Esc to exit", True, white)
-    text_rect = text.get_rect(center=(fullscreen_width // 2, fullscreen_height // 10 + 150))
-    screen.blit(text, text_rect)
+            keys = pygame.key.get_pressed()
 
-
-def game_over(winner):
-    my_font = pygame.font.SysFont('arial', 50)
-    if(winner == "AI"):
-        GOsurface = my_font.render(f"You Lose! Your Score: {player_score}", True, white)
-    else:
-        GOsurface = my_font.render(f"You Win! Your Score: {player_score}", True, white)
-    GOrect = GOsurface.get_rect()
-    GOrect.midtop = (fullscreen_width // 2, fullscreen_height // 4 + 20)
-    screen.blit(GOsurface, GOrect)
-    pygame.display.flip()
-    pygame.time.wait(2000)  # wait for 2 seconds before quitting
-def main():
-    global player_score, ai_score, ball_dx, ball_dy
-
-    paused = True
-    clock = pygame.time.Clock()
-    running = True
-    while running:
-        screen.fill((0, 0, 0))
-
-        # draws the white outline for the game area
-        pygame.draw.rect(screen, white, (game_area_x, game_area_y, width, height), 5)
-
-        # draws the  instructions
-        render_title()
-
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
+            # to escape to the next game
+            if keys[pygame.K_1]:
                 running = False
 
-        keys = pygame.key.get_pressed()
+            # to escape the whole program
+            if keys[pygame.K_ESCAPE]:
+                return 'escape'
 
-        # to escape to the next game
-        if keys[pygame.K_1]:
-            running = False
+            if paused:
+                if keys[pygame.K_SPACE]:
+                    paused = False
+            else:
+                if keys[pygame.K_UP] and self.player.top > self.game_area_y:
+                    self.player.y -= 5
+                if keys[pygame.K_DOWN] and self.player.bottom < self.game_area_y + self.height:
+                    self.player.y += 5
 
-        # to escape the whole program
-        if keys[pygame.K_ESCAPE]:
-            return 'escape'
+                if keys[pygame.K_SPACE]:
+                    self.reset_ball()
+                # Move ai paddle
+                self.move_ai()
 
-        if paused:
-            if keys[pygame.K_u]:
-                paused = False
-        else:
-            if keys[pygame.K_UP] and player.top > game_area_y:
-                player.y -= 5
-            if keys[pygame.K_DOWN] and player.bottom < game_area_y + height:
-                player.y += 5
+                # ball movement
+                self.ball.x += self.ball_dx * 5
+                self.ball.y += self.ball_dy * 5
 
-            if keys[pygame.K_p]:
-                paused = True
+                # ball collision with top and bottom walls
+                if self.ball.top <= self.game_area_y or self.ball.bottom >= self.game_area_y + self.height:
+                    self.ball_dy *= -1
 
-            if keys[pygame.K_SPACE]:
-                reset_ball()
-            # Move ai paddle
-            move_ai()
+                # ball collision with paddles
+                if self.ball.colliderect(self.player) or self.ball.colliderect(self.ai):
+                    self.ball_dx *= -1
 
-            # ball movement
-            ball.x += ball_dx * 5
-            ball.y += ball_dy * 5
+                # scoring system
+                if self.ball.left <= self.game_area_x:  # AI scores
+                    self.ai_score += 1
+                    if self.ai_score >= self.score_limit:
+                        self.game_over("AI")
+                        running = False
+                    self.reset_ball()
+                if self.ball.right >= self.game_area_x + self.width:  # Player scores
+                    self.player_score += 1
+                    if self.player_score >= self.score_limit:
+                        self.game_over("player")
+                        running = False
+                    self.reset_ball()
 
-            # ball collision with top and bottom walls
-            if ball.top <= game_area_y or ball.bottom >= game_area_y + height:
-                ball_dy *= -1
+            # draws paddles, ball, and score
+            pygame.draw.rect(self.screen, self.white, self.player)
+            pygame.draw.rect(self.screen, self.white, self.ai)
+            pygame.draw.ellipse(self.screen, self.white, self.ball)
 
-            # ball collision with paddles
-            if ball.colliderect(player) or ball.colliderect(ai):
-                ball_dx *= -1
+            self.display_score()
 
-            # scoring system
-            if ball.left <= game_area_x:  # AI scores
-                ai_score += 1
-                if ai_score >= score_limit:
-                    game_over("AI")
-                    running = False
-                reset_ball()
-            if ball.right >= game_area_x + width:  # Player scores
-                player_score += 1
-                if player_score >= score_limit:
-                    game_over("player")
-                    running = False
-                reset_ball()
+            # no idea what this does but breaks it if it doesn't have it
+            pygame.display.flip()
+            clock.tick(self.FPS)
 
-        # draws paddles, ball, and score
-        pygame.draw.rect(screen, white, player)
-        pygame.draw.rect(screen, white, ai)
-        pygame.draw.ellipse(screen, white, ball)
-
-        display_score()
-
-        # no idea what this does but breaks it if it doesn't have it
-        pygame.display.flip()
-        clock.tick(FPS)
-
-
-if __name__ == "__main__":
-    main()
