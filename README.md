@@ -17,6 +17,7 @@ To run this project, you'll just need to clone the repository, and have a Python
 1. **Clone the repository**:
    ```bash
    git clone https://github.com/gavinanthony1/SwampHacks25
+   cd SwampHacks25
 2. **Install Pygame**:
     ```bash
    pip install pygame
