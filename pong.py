@@ -139,10 +139,6 @@ class Pong:
 
             keys = pygame.key.get_pressed()
 
-            # to escape to the next game
-            if keys[pygame.K_1]:
-                return self.difficulty
-
             # to escape the whole program
             if keys[pygame.K_ESCAPE]:
                 return 'escape'

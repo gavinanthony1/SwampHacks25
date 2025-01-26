@@ -145,9 +145,6 @@ class SpaceInvaders:
                 if event.type == pygame.KEYDOWN:
                     if event.key == pygame.K_SPACE:
                         self.shoot_bullet()
-                    if event.key == pygame.K_2:
-                        running = False
-                        return self.difficulty
                     # To escape the whole program
                     if event.key == pygame.K_ESCAPE:
                         return 'escape'

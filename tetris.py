@@ -2,7 +2,7 @@ import pygame
 import random
 
 class Tetris:
-    def __init__(self, width, height, difficulty, play_width_ratio=0.5, play_height_ratio=0.5):
+    def __init__(self, width, height, difficulty):
         self.width = width
         self.height = height
         self.play_width = 300
@@ -107,10 +107,22 @@ class Tetris:
         self.score += cleared
 
     def game_over(self):
-        for cell in self.grid[0]:
-            if cell:
-                return True
-        return False
+        my_font = pygame.font.SysFont('arial', 50)
+        GOsurface = my_font.render(f"Game Over! Your Score: {self.score}", True, self.white)
+        GOrect = GOsurface.get_rect()
+        GOrect.midtop = (self.width // 2, self.height // 4)
+        self.screen.blit(GOsurface, GOrect)
+        pygame.display.flip()
+        pygame.time.wait(2000)  # wait for 2 seconds before quitting
+        if self.score > 5:
+            return self.difficulty + 1
+        elif self.score < 10:
+            return self.difficulty - 1
+        elif self.score > 15:
+            return self.difficulty + 3
+        else:
+            return self.difficulty
+
 
     def run(self):
         clock = pygame.time.Clock()
@@ -133,9 +145,6 @@ class Tetris:
                     if event.key == pygame.K_RIGHT:
                         if not self.check_collision((0, 1)):
                             self.current_pos[1] += 1
-                    if event.key == pygame.K_4:
-                        running = False
-                        return self.difficulty
                     if event.key == pygame.K_ESCAPE:
                         return 'escape'
 
@@ -151,8 +160,9 @@ class Tetris:
                 else:
                     self.merge_piece()
                     self.clear_lines()
-                    if self.game_over():
-                        return self.difficulty - 1 if self.score < 5 else self.difficulty + 1
+                    for cell in self.grid[0]:
+                        if cell:
+                            return self.game_over()
                     self.current_piece = self.get_new_piece()
                     self.current_pos = [0, self.cols // 2 - len(self.current_piece[0]) // 2]
                 fall_time = 0

@@ -48,6 +48,8 @@ class Snake:
             return self.difficulty + 1
         elif self.score < 10:
             return self.difficulty - 1
+        elif self.score > 30:
+            return self.difficulty + 3
         else:
             return self.difficulty
 
@@ -70,9 +72,6 @@ class Snake:
                         self.change_to = 'LEFT'
                     if event.key == pygame.K_RIGHT:
                         self.change_to = 'RIGHT'
-                    if event.key == pygame.K_3:
-                        running = False
-                        return self.difficulty
                     # To escape the whole program
                     if event.key == pygame.K_ESCAPE:
                         return 'escape'
