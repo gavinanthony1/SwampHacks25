@@ -13,7 +13,7 @@ This project features a collection of four retro games, cycling through each one
 
 ## Requirements
 
-To run this project, you'll just need to clone the repository, and have a Python interpreter and the Pygame library installed. You can follow the commands in the steps below:
+To run this project, you'll just need to clone the repository, and have a Python interpreter and the pygame library installed. You can follow the commands in the steps below:
 1. **Clone the repository**:
    ```bash
    git clone https://github.com/gavinanthony1/SwampHacks25
