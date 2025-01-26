@@ -3,50 +3,71 @@ import random
 
 
 class Pong:
-    def __init__(self, fullscreen_width, fullscreen_height):
+    def __init__(self, fullscreen_width, fullscreen_height, difficulty):
         self.fullscreen_width = fullscreen_width
         self.fullscreen_height = fullscreen_height
-        # only part of the screen is played on
         self.width = 400
         self.height = 300
 
+        # scale ball speed with difficulty
+        self.ball_speed = max(3, 0.5 * difficulty)
+
+        self.ai_speed = max(2, min(5, difficulty * 0.3))
+
+        # score limit scales with difficulty
+        self.score_limit = max(3, difficulty // 2)
+
         self.white = (255, 255, 255)
         self.FPS = 60
+
+        # paddles dimensions (player's is longer because AI is too good)
         self.paddle_width = 10
-        self.paddle_height = 60
+        self.player_paddle_height = max(60, 100 - 2 * difficulty)
+        self.ai_paddle_height = max(60, 90 - 2 * difficulty)
+
         self.ball_size = 10
-        self.ai_speed = 7
-        self.score_limit = 10
         self.player_score = 0
         self.ai_score = 0
-        #  position for the  game area
+        self.difficulty = difficulty
+
         self.game_area_x = (self.fullscreen_width - self.width) // 2
         self.game_area_y = (self.fullscreen_height - self.height) // 2
 
-        # Game objects (Player and AI paddles, ball)
-        self.player = pygame.Rect(self.game_area_x + 30, self.game_area_y + self.height // 2 - self.paddle_height // 2,
-                                  self.paddle_width,
-                                  self.paddle_height)
-        self.ai = pygame.Rect(self.game_area_x + self.width - 30 - self.paddle_width,
-                              self.game_area_y + self.height // 2 - self.paddle_height // 2,
-                              self.paddle_width, self.paddle_height)
-        self.ball = pygame.Rect(self.game_area_x + self.width // 2 - self.ball_size // 2,
-                                self.game_area_y + self.height // 2 - self.ball_size // 2,
-                                self.ball_size, self.ball_size)
+        # Initialize paddles and ball
+        self.player = pygame.Rect(
+            self.game_area_x + 30,
+            self.game_area_y + self.height // 2 - self.player_paddle_height // 2,
+            self.paddle_width,
+            self.player_paddle_height,
+        )
+        self.ai = pygame.Rect(
+            self.game_area_x + self.width - 30 - self.paddle_width,
+            self.game_area_y + self.height // 2 - self.ai_paddle_height // 2,
+            self.paddle_width,
+            self.ai_paddle_height,
+        )
+        self.ball = pygame.Rect(
+            self.game_area_x + self.width // 2 - self.ball_size // 2,
+            self.game_area_y + self.height // 2 - self.ball_size // 2,
+            self.ball_size,
+            self.ball_size,
+        )
         self.ball_dx = random.choice((1, -1))
-        self.ball_dy = random.choice((1, -1))  # Ball direction
+        self.ball_dy = random.choice((1, -1))
 
     def reset_ball(self):
         self.ball.center = (self.game_area_x + self.width // 2, self.game_area_y + self.height // 2)
         self.ball_dx, self.ball_dy = random.choice((1, -1)), random.choice((1, -1))
 
+
     def move_ai(self):
+        # ai changes on difficulty
         if self.ai.centery < self.ball.centery:
             self.ai.y += self.ai_speed
         if self.ai.centery > self.ball.centery:
             self.ai.y -= self.ai_speed
 
-        # keeps AI paddle within the screen bounds
+        # stays within bounds
         if self.ai.top < self.game_area_y:
             self.ai.top = self.game_area_y
         if self.ai.bottom > self.game_area_y + self.height:
@@ -68,24 +89,32 @@ class Pong:
         # instructions
         font_instructions = pygame.font.Font(None, 30)
 
-        text = font_instructions.render("Spacebar to start/reset", True, self.white)
+        text = font_instructions.render("Spacebar to start/reset ball", True, self.white)
         text_rect = text.get_rect(center=(self.fullscreen_width // 2, self.fullscreen_height // 10))
         self.screen.blit(text, text_rect)
 
-    def game_over(self, winner):
+        text = font_instructions.render(f"Difficulty: {self.difficulty}", True, self.white)
+        text_rect = text.get_rect(center=(self.fullscreen_width // 2, self.fullscreen_height // 10 + 30))
+        self.screen.blit(text, text_rect)
+
+    def game_over(self):
         my_font = pygame.font.SysFont('arial', 50)
-        if (winner == "AI"):
-            GOsurface = my_font.render(f"You Lose! Your Score: {self.player_score}", True, self.white)
-        else:
-            GOsurface = my_font.render(f"You Win! Your Score: {self.player_score}", True, self.white)
+        GOsurface = my_font.render(f"Game Over! Your Score: {self.player_score}", True, self.white)
         GOrect = GOsurface.get_rect()
         GOrect.midtop = (self.fullscreen_width // 2, self.fullscreen_height // 4 + 20)
         self.screen.blit(GOsurface, GOrect)
         pygame.display.flip()
+
         pygame.time.wait(2000)  # wait for 2 seconds before quitting
+        if self.player_score > self.ai_score:
+            return self.difficulty + 1  # increase difficulty on win
+        elif self.ai_score > self.player_score:
+            return max(1, self.difficulty - 1)
+        else:
+            return self.difficulty
 
     def run(self):
-        self.screen = pygame.display.set_mode((self.fullscreen_width, self.fullscreen_height))  # Full-screen mode
+        self.screen = pygame.display.set_mode((self.fullscreen_width, self.fullscreen_height))
         pygame.display.set_caption('Pong')
 
         #  position for the  game area
@@ -112,7 +141,7 @@ class Pong:
 
             # to escape to the next game
             if keys[pygame.K_1]:
-                running = False
+                return self.difficulty
 
             # to escape the whole program
             if keys[pygame.K_ESCAPE]:
@@ -133,8 +162,8 @@ class Pong:
                 self.move_ai()
 
                 # ball movement
-                self.ball.x += self.ball_dx * 5
-                self.ball.y += self.ball_dy * 5
+                self.ball.x += self.ball_dx * self.ball_speed
+                self.ball.y += self.ball_dy * self.ball_speed
 
                 # ball collision with top and bottom walls
                 if self.ball.top <= self.game_area_y or self.ball.bottom >= self.game_area_y + self.height:
@@ -148,14 +177,12 @@ class Pong:
                 if self.ball.left <= self.game_area_x:  # AI scores
                     self.ai_score += 1
                     if self.ai_score >= self.score_limit:
-                        self.game_over("AI")
-                        running = False
+                        return self.game_over()
                     self.reset_ball()
                 if self.ball.right >= self.game_area_x + self.width:  # Player scores
                     self.player_score += 1
                     if self.player_score >= self.score_limit:
-                        self.game_over("player")
-                        running = False
+                        return self.game_over()
                     self.reset_ball()
 
             # draws paddles, ball, and score
@@ -168,4 +195,3 @@ class Pong:
             # no idea what this does but breaks it if it doesn't have it
             pygame.display.flip()
             clock.tick(self.FPS)
-

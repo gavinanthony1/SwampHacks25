@@ -2,13 +2,14 @@ import random
 import pygame
 
 class Snake:
-    def __init__(self, width, height):
+    def __init__(self, width, height, difficulty):
         self.width = width
         self.height = height
         self.white = (255, 255, 255)
         self.black = (0, 0, 0)
-        self.fps = 15
+        self.fps = 10 + (difficulty * 2)
         self.grid_size = 20  # cell size for snake and food
+        self.difficulty = difficulty
 
         self.cols = self.width // self.grid_size
         self.rows = self.height // self.grid_size
@@ -43,6 +44,12 @@ class Snake:
         self.screen.blit(GOsurface, GOrect)
         pygame.display.flip()
         pygame.time.wait(2000)  # wait for 2 seconds before quitting
+        if self.score > 10:
+            return self.difficulty + 1
+        elif self.score < 10:
+            return self.difficulty - 1
+        else:
+            return self.difficulty
 
     def run(self):
         clock = pygame.time.Clock()
@@ -63,8 +70,9 @@ class Snake:
                         self.change_to = 'LEFT'
                     if event.key == pygame.K_RIGHT:
                         self.change_to = 'RIGHT'
-                    if event.key == pygame.K_2:
+                    if event.key == pygame.K_3:
                         running = False
+                        return self.difficulty
                     # To escape the whole program
                     if event.key == pygame.K_ESCAPE:
                         return 'escape'
@@ -106,21 +114,22 @@ class Snake:
             # Check for collision with boundaries or itself
             if (self.snake_pos[0][0] < 0 or self.snake_pos[0][0] >= self.width or
                     self.snake_pos[0][1] < 0 or self.snake_pos[0][1] >= self.height):
-                self.game_over()
-                running = False
+                return self.game_over()
 
             for block in self.snake_pos[1:]:
                 if block == self.snake_pos[0]:
-                    self.game_over()
-                    running = False
+                    return self.game_over()
 
             # Draw everything
             self.screen.fill(self.black)
             self.draw_snake()
             self.draw_food()
 
+
             score_surface = self.font.render(f"Score: {self.score}", True, self.white)
             self.screen.blit(score_surface, (10, 10))
+            score_surface = self.font.render(f"Difficulty: {self.difficulty}", True, self.white)
+            self.screen.blit(score_surface, (10, 40))
 
             pygame.display.flip()
             clock.tick(self.fps)
